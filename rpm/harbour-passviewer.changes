@@ -8,6 +8,13 @@
 # * date Author's Name <author's email> version-release
 # - Summary of changes
 
+* Fri Sep 25 2026 Andrew Branson <andrew.branson@jolla.com> 2.0-1
+- Save scanned cards from the camera or images, with custom icons
+- Import and preview pkpass files and pkpasses bundles in private storage
+- Organize cards and passes with a timeline and manual or automatic archive
+- Respect portrait screen cutouts and improve camera focus and zoom controls
+- Render pass barcodes with ZXing and validate their encoded bytes
+
 * Sun Feb 9 2025 Christof Bürgi <christof@buergi.lugs.ch> 1.7-1
 - Partial support for PassBook Bundles
 - Slight fixes to adapt for API changes

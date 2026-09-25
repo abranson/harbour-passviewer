@@ -48,3 +48,15 @@ Thumbs.db
 *.mov
 *.wmv
 
+
+# Local Qt/Sailfish build products and task notes
+/.mb2/
+/Makefile
+/*.o
+/moc_*.cpp
+/harbour-passviewer
+/documentation.list
+/RPMS/
+/translations/*.qm
+/AGENTS.md
+/TASK.md

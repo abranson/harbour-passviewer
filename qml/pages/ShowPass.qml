@@ -3,6 +3,7 @@ import Sailfish.Silica 1.0
 
 Page {
     id: page
+
     //allowedOrientations: Orientation.All
 
     property string name: ''
@@ -12,7 +13,7 @@ Page {
 
     SilicaFlickable {
         anchors.fill: parent
-        contentHeight: pass.item.height + Theme.paddingLarge * 2
+        contentHeight: pass.y + pass.item.height + Theme.paddingLarge
 
         PullDownMenu {
 
@@ -53,7 +54,7 @@ Page {
             width: Math.min(parent.width - 2 * Theme.horizontalPageMargin, Theme.fontSizeMedium * 20)
             anchors.horizontalCenter: parent.horizontalCenter
             anchors.top: parent.top
-            anchors.topMargin: Theme.paddingLarge
+            anchors.topMargin: Theme.paddingLarge + (page.orientation === Orientation.Portrait ? appWindow.screenCutoutHeight : 0)
             source: Qt.resolvedUrl("../lib/Pass.qml")
             onLoaded: {
                 item.path = path

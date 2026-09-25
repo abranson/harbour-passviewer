@@ -149,6 +149,7 @@ ZipFile::ZipFile(QString filename) :
             entryData.append(qFromLittleEndian<quint32>(entry->headerPos));
             entryData.append(qFromLittleEndian<quint32>(entry->compressedSize));
             entryData.append(qFromLittleEndian<quint32>(entry->size));
+            entryData.append(qFromLittleEndian<quint32>(entry->crc32));
             m_interpretExtras(m_file, qFromLittleEndian<quint16>(entry->extraLength), entryData[3], entryData[2], entryData[1]);
             m_entries.insert(name, entryData);
         }
@@ -157,12 +158,16 @@ ZipFile::ZipFile(QString filename) :
         m_valid = true;
 }
 
-QByteArray ZipFile::getFile(QString filename) {
+QByteArray ZipFile::getFile(QString filename, qint64 maximumSize) {
     if (!m_entries.contains(filename))
         return QByteArray();
     if (m_entries.value(filename).at(2) == 0)  // empty file
         return QByteArray();
-    if (m_entries.value(filename).at(2) > 10485760)  // max 10MiB as we work in RAM
+    // Bound both compressed and expanded data before allocating memory.
+    if (maximumSize <= 0 || maximumSize > 150 * 1024 * 1024
+            || m_entries.value(filename).at(2) > maximumSize
+            || m_entries.value(filename).at(3) > maximumSize
+            || m_entries.value(filename).at(3) <= 0)
         return QByteArray();
     // get the ZIP file header
     m_file.seek(m_entries.value(filename).at(1));
@@ -177,19 +182,29 @@ QByteArray ZipFile::getFile(QString filename) {
     QByteArray compressed(m_file.read(m_entries.value(filename).at(2)));
     if (compressed.size() != m_entries.value(filename).at(2))
         return QByteArray();
+    const auto valid = [this, &filename](const QByteArray &data) {
+        return data.size() == m_entries.value(filename).at(3)
+                && crc32(0, reinterpret_cast<const Bytef *>(data.constData()), data.size())
+                   == quint64(m_entries.value(filename).at(4));
+    };
     // decompress (if it's compressed)
     switch (m_entries.value(filename).at(0)) {
     case 0:  // uncompressed
-        return compressed;
+        return valid(compressed) ? compressed : QByteArray();
         break;
     case 8:  // deflate
         {
-            compressed.prepend("\x78\x9c");  // ZLib Header
             QByteArray uncompressed(m_entries.value(filename).at(3), '\0');
-            uLongf insize = compressed.size();
-            uLongf outsize = uncompressed.size();
-            uncompress((uchar*)uncompressed.data(), &outsize, (uchar*)compressed.data(), insize);
-            return uncompressed;
+            z_stream stream = {};
+            stream.next_in = reinterpret_cast<Bytef *>(compressed.data());
+            stream.avail_in = compressed.size();
+            stream.next_out = reinterpret_cast<Bytef *>(uncompressed.data());
+            stream.avail_out = uncompressed.size();
+            if (inflateInit2(&stream, -MAX_WBITS) != Z_OK)
+                return QByteArray();
+            const int status = inflate(&stream, Z_FINISH);
+            inflateEnd(&stream);
+            return status == Z_STREAM_END && valid(uncompressed) ? uncompressed : QByteArray();
         }
         break;
     case 12:  // bzip2
@@ -197,8 +212,8 @@ QByteArray ZipFile::getFile(QString filename) {
             QByteArray uncompressed(m_entries.value(filename).at(3), '\0');
             uint insize = compressed.size();
             uint outsize = uncompressed.size();
-            BZ2_bzBuffToBuffDecompress(uncompressed.data(), &outsize, compressed.data(), insize, 0, 0);
-            return uncompressed;
+            const int status = BZ2_bzBuffToBuffDecompress(uncompressed.data(), &outsize, compressed.data(), insize, 0, 0);
+            return status == BZ_OK && valid(uncompressed) ? uncompressed : QByteArray();
         }
         break;
     case 14:  // lzma
@@ -215,9 +230,9 @@ QByteArray ZipFile::getFile(QString filename) {
             lzma.avail_in = compressed.size();
             lzma.next_out = (uint8_t*)uncompressed.data();
             lzma.avail_out = uncompressed.size();
-            lzma_code(&lzma, LZMA_RUN);
+            const lzma_ret status = lzma_code(&lzma, LZMA_FINISH);
             lzma_end(&lzma);
-            return uncompressed;
+            return status == LZMA_STREAM_END && valid(uncompressed) ? uncompressed : QByteArray();
         }
     }
     return QByteArray();

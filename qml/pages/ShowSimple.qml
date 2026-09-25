@@ -4,6 +4,7 @@ import "../lib/utils.js" as Utils
 
 Page {
     id: page
+
     //allowedOrientations: Orientation.All
 
     property string jsondata: ''
@@ -12,10 +13,11 @@ Page {
     property string barcodeEncoding: "iso-8859-1"
     property string barcodeContent: ""
     property string barcodeAltText: ""
+    property string barcodeError
 
     SilicaFlickable {
         anchors.fill: parent
-        contentHeight: body.height + Theme.paddingLarge * 2
+        contentHeight: body.y + body.height + Theme.paddingLarge
 
         PullDownMenu {
 
@@ -34,7 +36,7 @@ Page {
             anchors.right: parent.right
             anchors.leftMargin: Theme.horizontalPageMargin
             anchors.rightMargin: Theme.horizontalPageMargin
-            anchors.topMargin: Theme.paddingLarge
+            anchors.topMargin: Theme.paddingLarge + (page.orientation === Orientation.Portrait ? appWindow.screenCutoutHeight : 0)
             spacing: Theme.paddingMedium
 
             Image {
@@ -109,7 +111,7 @@ Page {
                     height: sourceSize.height !== 0 ? Utils.barcodeSize(sourceSize.width, sourceSize.height, body.width, Theme.fontSizeMedium)[1] : 0
                     smooth: false
                     fillMode: Image.PreserveAspectFit
-                    source: "image://barcode/" + barcodeType + "/" + barcodeEncoding + "/" + barcodeContent;
+                    source: barcodeContent.length ? "image://barcode/" + barcodeType + "/" + barcodeEncoding + "/" + barcodeContent : "";
                 }
 
                 MouseArea {
@@ -123,6 +125,21 @@ Page {
                 text: barcodeAltText
                 textFormat: Text.PlainText
                 color: Theme.highlightColor
+            }
+
+            Label {
+                width: parent.width
+                visible: text.length > 0
+                text: {
+                    if (page.barcodeError.length)
+                        return page.barcodeError
+                    if (barcodeImage.status === Image.Error)
+                        return qsTr("Could not render this barcode reliably.")
+                    return ""
+                }
+                textFormat: Text.PlainText
+                color: Theme.highlightColor
+                wrapMode: Text.Wrap
             }
 
             Repeater {
@@ -198,31 +215,13 @@ Page {
         setFields(pass, style, 'primaryFields', frontFields);
         setFields(pass, style, 'secondaryFields', frontFields);
         setFields(pass, style, 'auxiliaryFields', frontFields);
-        // look for barcodes
-        if (!('barcodes' in pass)) {
-            pass.barcodes = [];
-            if ('barcode' in pass) {
-                pass.barcodes.push(pass.barcode);
-            }
-        }
-        // paint the first useable barcode
-        var validCode = false;
-        for (var barcode = 0; barcode <= pass.barcodes.length; barcode++) {
-            switch(pass.barcodes[barcode].format.substring(15).toLowerCase()) {
-            case 'code128':
-            case 'qr':
-            case 'aztec':
-            case 'pdf417':
-                barcodeContent = 'message' in pass.barcodes[barcode] ? Qt.btoa(pass.barcodes[barcode].message) : '';
-                barcodeEncoding = 'messageEncoding' in pass.barcodes[barcode] ?  pass.barcodes[barcode].messageEncoding: 'iso-8859-1';
-                barcodeType = pass.barcodes[barcode].format.substring(15).toLowerCase();
-                barcodeAltText = 'altText' in pass.barcodes[barcode] ? pass.barcodes[barcode].altText : '';
-                validCode = true;
-                break;
-            }
-            if (validCode)
-                break;
-        }
+        var barcode = Utils.selectBarcode(pass, barcodeCodec);
+        barcodeContent = "";
+        barcodeType = barcode.type;
+        barcodeEncoding = barcode.encoding;
+        barcodeAltText = barcode.altText;
+        barcodeError = barcode.error;
+        barcodeContent = barcode.content;
         // set back field contents
         backFields.clear();
         setFields(pass, style, 'backFields', backFields);

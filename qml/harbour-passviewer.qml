@@ -5,6 +5,10 @@ import "pages"
 ApplicationWindow
 {
     id: appWindow
+
+    // Older Silica versions do not expose display cutouts.
+    readonly property real screenCutoutHeight: Screen.topCutout !== undefined ? Screen.topCutout.height : 0
+
     signal openPass(string origin)
     property string topIcon: ""
     property string topPath: ""

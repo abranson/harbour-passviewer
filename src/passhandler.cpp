@@ -9,6 +9,9 @@ PassHandler::PassHandler(QObject *parent) :
 }
 
 QString PassHandler::getCanonicalPath(QString path) {
+    const QUrl url(path);
+    if (url.isLocalFile())
+        path = url.toLocalFile();
     QFileInfo pass(path);
     if (pass.isFile())
         return pass.canonicalFilePath();

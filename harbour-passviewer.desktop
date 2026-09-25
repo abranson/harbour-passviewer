@@ -5,11 +5,11 @@ Icon=harbour-passviewer
 Exec=harbour-passviewer %f
 Categories=Utility;
 Name=Pass Viewer
-MimeType=application/vnd.apple.pkpass
+MimeType=application/vnd.apple.pkpass;application/vnd.apple.pkpasses;
 X-Nemo-Single-Instance=no
 # Name[de]=Pass Viewer
 
 [X-Sailjail]
-Permissions=Internet;Location;RemovableMedia;UserDirs
+Permissions=Camera;Internet;Location;MediaIndexing;RemovableMedia;UserDirs
 OrganizationName=ch.p2501
 ApplicationName=harbour-passviewer

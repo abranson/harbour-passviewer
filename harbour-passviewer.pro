@@ -13,22 +13,19 @@
 TARGET = harbour-passviewer
 
 CONFIG += sailfishapp
-CONFIG += c++11
+CONFIG += link_pkgconfig
+PKGCONFIG += sailfishapp zxing
+QMAKE_CXXFLAGS += -std=c++17
 
 SOURCES += src/harbour-passviewer.cpp \
-    src/zint/qr.c \
-    src/zint/common.c \
-    src/zint/reedsol.c \
-    src/zint/aztec.c \
-    src/zint/pdf417.c \
-    src/zint/large.c \
-    src/zint/library.c \
-    src/zint/bmp.c \
+    src/barcodescanner.cpp \
+    src/barcodecodec.cpp \
+    src/savedcards.cpp \
+    src/cardicons.cpp \
+    src/passimporter.cpp \
     src/barcodeimageprovider.cpp \
     src/homewatcher.cpp \
     src/settingsstore.cpp \
-    src/zint/gs1.c \
-    src/zint/code128.c \
     src/zipfile.cpp \
     src/zipfileimageprovider.cpp \
     src/datetimeformat.cpp \
@@ -40,8 +37,15 @@ SOURCES += src/harbour-passviewer.cpp \
     src/notificator.cpp
 
 OTHER_FILES += qml/harbour-passviewer.qml \
+    qml/pages/ScanCard.qml \
+    qml/pages/SaveCard.qml \
+    qml/pages/SaveCardForm.qml \
+    qml/pages/ShowCard.qml \
+    qml/pages/CardIcon.qml \
+    qml/pages/ImportPass.qml \
     qml/cover/CoverPage.qml \
     qml/pages/FirstPage.qml \
+    qml/pages/Archive.qml \
     rpm/harbour-passviewer.spec \
     rpm/harbour-passviewer.yaml \
     translations/*.ts \
@@ -55,6 +59,7 @@ OTHER_FILES += qml/harbour-passviewer.qml \
     qml/pages/ShowPass.qml \
     qml/lib/Pass.qml \
     qml/lib/utils.js \
+    qml/lib/timeline.js \
     qml/lib/Back.qml
 
 SAILFISHAPP_ICONS = 86x86 108x108 128x128 172x172
@@ -75,20 +80,14 @@ TRANSLATIONS += translations/harbour-passviewer-fr.ts
 TRANSLATIONS += translations/harbour-passviewer-es.ts
 
 HEADERS += \
-    src/zint/qr.h \
-    src/zint/common.h \
-    src/zint/sjis.h \
-    src/zint/reedsol.h \
-    src/zint/aztec.h \
-    src/zint/pdf417.h \
-    src/zint/large.h \
-    src/zint/zint.h \
-    src/zint/maxipng.h \
-    src/zint/font.h \
+    src/barcodescanner.h \
+    src/barcodecodec.h \
+    src/savedcards.h \
+    src/cardicons.h \
+    src/passimporter.h \
     src/barcodeimageprovider.h \
     src/homewatcher.h \
     src/settingsstore.h \
-    src/zint/gs1.h \
     src/zipfile.h \
     src/zipfileimageprovider.h \
     src/datetimeformat.h \
@@ -99,6 +98,7 @@ HEADERS += \
     src/passinfo.h \
     src/notificator.h
 
+QT += multimedia concurrent
 QT += network
 QT += sql
 QT += positioning
@@ -113,3 +113,7 @@ DISTFILES += \
     qml/lib/currencies.json
 
 INCLUDEPATH += /usr/include/nemonotifications-qt5
+
+pass_mime.files = data/harbour-passviewer.xml
+pass_mime.path = /usr/share/mime/packages
+INSTALLS += pass_mime

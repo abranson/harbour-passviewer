@@ -1,5 +1,35 @@
 .pragma library
 
+function selectBarcode(pass, codec) {
+    var barcodes = Array.isArray(pass.barcodes) ? pass.barcodes : [];
+    if (barcodes.length === 0 && pass.barcode)
+        barcodes = [pass.barcode];
+    var error = "";
+    for (var i = 0; i < barcodes.length; i++) {
+        var barcode = barcodes[i];
+        if (!barcode || typeof barcode.format !== "string")
+            continue;
+        var formats = { PKBarcodeFormatQR: "qr", PKBarcodeFormatAztec: "aztec",
+                        PKBarcodeFormatPDF417: "pdf417", PKBarcodeFormatCode128: "code128" };
+        var type = formats[barcode.format];
+        if (!type)
+            continue;
+        if (typeof barcode.message !== "string") {
+            error = qsTr("The barcode has no valid message.");
+            continue;
+        }
+        var encoding = typeof barcode.messageEncoding === "string" ? barcode.messageEncoding : "iso-8859-1";
+        var encoded = codec.encodeMessage(barcode.message, encoding);
+        if (encoded.error) {
+            error = encoded.error;
+            continue;
+        }
+        return { type: type, encoding: encoded.encoding, content: encoded.content,
+                 altText: typeof barcode.altText === "string" ? barcode.altText : "", error: "" };
+    }
+    return { type: "", encoding: "", content: "", altText: "", error: error };
+}
+
 function checkSpecificFields(pass, style, fieldType) {
     // adds undefined entries if necessary
     for (var field = 0; field < pass[style][fieldType].length; field++) {

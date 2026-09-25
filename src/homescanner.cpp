@@ -5,73 +5,26 @@ HomeScanner::HomeScanner(QObject *parent) : QObject(parent)
 
 }
 
-HomeScanner::~HomeScanner() {
-    // clear and remove temporary directory
-    QString tmpdir(QStandardPaths::writableLocation(QStandardPaths::TempLocation));
-    tmpdir += "/harbour-passviewer";
-    if (QDir(tmpdir).exists())
-        QDir(tmpdir).removeRecursively();
-}
-
 void HomeScanner::scanHome(bool update) {
-    QMimeDatabase mime;
-    QStringList inspectPaths;
-    QStringList visiblePaths;
-    QStringList passPaths;
+    // Only enumerate the app-owned library. External files require import.
+    const QString directory = QStandardPaths::writableLocation(QStandardPaths::DataLocation) + "/passes";
+    QDir().mkpath(directory);
     QVariantList passes;
-    static bool first = true;
-    inspectPaths.append(QDir::homePath());  // start with the home directory
-    if ((!first) && QDir("/media/sdcard").exists())
-        inspectPaths.append("/media/sdcard");  // also check the SD-Card (not on the first run)
-    while (!inspectPaths.isEmpty()) {
-        QDir current(inspectPaths.at(0));
-        inspectPaths.removeFirst();
-        visiblePaths.append(current.path());
-        QFileInfoList entries(current.entryInfoList());
-        for (auto entry = entries.cbegin(); entry != entries.cend(); ++entry) {
-            if (entry->isHidden())  // we don't look at hidden directories or files
-                continue;
-            if (entry->isDir()) {
-                QString dpath(entry->fileName().toLower());
-                if (dpath == "tmp" || dpath == "temp")  // ignore temporary directories
-                    continue;
-                dpath = entry->canonicalFilePath();
-                if (inspectPaths.contains(dpath) || visiblePaths.contains(dpath))  // avoid double checks
-                    continue;
-                inspectPaths.append(dpath);
-            }
-            if (entry->isFile()) {
-                // look for obvious pass files and ZIP archives only
-                if (entry->suffix() != "pkpass" && mime.mimeTypeForFile(*entry).name() != "application/zip")
-                    continue;
-                QString fpath(entry->canonicalFilePath());
-                QVariantMap pass = m_buildPass(fpath);
-                if (!pass.isEmpty()) {
-                    // singular pass
-                    passPaths.append(fpath);
-                    passes.append(pass);
-                }
-                else {
-                    // maybe it's a bundle?
-                    QString tmppassdir = m_unzipPassBundle(fpath);
-                    if (tmppassdir != "") {
-                        if (!(inspectPaths.contains(tmppassdir) || visiblePaths.contains(tmppassdir)))
-                            inspectPaths.append(tmppassdir);
-                    }
-                }
-            }
-        }
+    const auto files = QDir(directory).entryInfoList({"*.pkpass"}, QDir::Files | QDir::NoSymLinks);
+    for (const QFileInfo &file : files) {
+        const QVariantMap pass = m_buildPass(file.absoluteFilePath());
+        if (!pass.isEmpty())
+            passes.append(pass);
     }
-    emit passesFound(passes, visiblePaths, update);
-    if (first) {
-        // after first run, scan once more including the SD card
-        first = false;
-        scanHome(false);
-    }
+    emit passesFound(passes, {directory}, update);
 }
 
-void HomeScanner::scanHome(QString path) {
+void HomeScanner::scanHome(QString) {
     scanHome(false);
+}
+
+QVariantMap HomeScanner::readPass(const QString &path) {
+    return m_buildPass(path);
 }
 
 QVariantMap HomeScanner::m_buildPass(QString zipname) {
@@ -117,50 +70,16 @@ QVariantMap HomeScanner::m_buildPass(QString zipname) {
         name = secondaries.at(0).toObject().value("label").toString() + " " + secondaries.at(0).toObject().value("value").toString();
     else if (auxiliaries.count() > 0)
         name = auxiliaries.at(0).toObject().value("label").toString() + " " + auxiliaries.at(0).toObject().value("value").toString();
+    // Passes in the private library have generated filenames.
+    if (name.trimmed().isEmpty())
+        name = json.object().value("description").toString();
     // use the file basename if everything else fails
     if (name == "" || name == " ")
         name = QFileInfo(zipname).baseName();
-    // check if the file is from a bundle
-    bool bundle = zipname.startsWith(QStandardPaths::writableLocation(QStandardPaths::TempLocation));
-    // check if the pass is updateable
-    bool updateable = (!bundle) && json.object().contains("webServiceURL") && json.object().contains("serialNumber") && json.object().contains("authenticationToken");
+    const bool bundle = false;
+    const bool updateable = json.object().contains("webServiceURL") && json.object().contains("serialNumber") && json.object().contains("authenticationToken");
     // construct and return the pass
     return QVariantMap({{"name", name}, {"path", zipname}, {"jsondata", jsondata}, {"typeId", typeId}, {"bundle", bundle}, {"updateable", updateable}, {"mtime", QFileInfo(zipname).lastModified()}});
-}
-
-QString HomeScanner::m_unzipPassBundle(QString zipname) {
-    // only check ZIP files with appropriate suffix
-    if (!zipname.endsWith(".pkpasses"))
-        return QString();
-    ZipFile zip(zipname);
-    if (!zip.isValid())
-        return QString();
-    // temp directory for unzipped passes
-    QString tmpdir(QStandardPaths::writableLocation(QStandardPaths::TempLocation));
-    tmpdir += "/harbour-passviewer/" + zipname;
-    if (!QDir(tmpdir).exists())
-        QDir().mkpath(tmpdir);
-    // check file for stored passes
-    QStringList entrynames = zip.getFileList();
-    bool unzipped = false;
-    for (auto entry = entrynames.cbegin(); entry != entrynames.cend(); ++entry) {
-        if (!entry->endsWith(".pkpass"))  // only check entries with the appropriate suffix
-            continue;
-        // if it's a pass, unzip it to temp
-        QFile passfile(tmpdir + "/" + *entry);
-        if (passfile.open(QIODevice::WriteOnly)) {
-            passfile.write(zip.getFile(*entry));
-            passfile.close();
-            unzipped = true;
-        }
-    }
-    // if we don't have files, don't leave the directory
-    if (!unzipped) {
-        QDir().rmpath(tmpdir);
-        return QString();
-    }
-    // we unzipped files, so that directory has to be watched
-    return tmpdir;
 }
 
 void HomeScanner::m_cleanJson(QString &data) {

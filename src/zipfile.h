@@ -26,7 +26,7 @@ public:
 
     Q_INVOKABLE bool isValid() { return m_valid; }
     Q_INVOKABLE QStringList getFileList() { return m_entries.keys(); }
-    Q_INVOKABLE QByteArray getFile(QString filename);
+    Q_INVOKABLE QByteArray getFile(QString filename, qint64 maximumSize = 10485760);
     Q_INVOKABLE QString getTextFile(QString filename);
 
 signals:

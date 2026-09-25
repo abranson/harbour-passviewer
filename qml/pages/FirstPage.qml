@@ -1,31 +1,186 @@
-import QtQuick 2.0
+import QtQuick 2.6
 import Sailfish.Silica 1.0
 import QtPositioning 5.2
 import Nemo.DBus 2.0
+import "../lib/timeline.js" as Timeline
 
 
 Page {
     id: page
+
     allowedOrientations: Orientation.All
 
     property string uid: "firstPage"
-    property bool wide: (Screen.sizeCategory == Screen.Large || Screen.sizeCategory == Screen.ExtraLarge) && (appWindow.orientation == Orientation.Landscape || appWindow.orientation == Orientation.LandscapeInverted)
+    property bool hasImportedPasses
+    property bool wide: hasImportedPasses && (Screen.sizeCategory == Screen.Large || Screen.sizeCategory == Screen.ExtraLarge) && (appWindow.orientation == Orientation.Landscape || appWindow.orientation == Orientation.LandscapeInverted)
     property bool displayOn: true
+    property string pendingOpen
+
+    ListModel {
+        id: passList
+    }
+
+    ListModel {
+        id: visiblePasses
+    }
+
+    ListModel {
+        id: archivedPasses
+    }
+
+    Component {
+        id: passDelegate
+
+        ListItem {
+            id: entry
+
+            contentHeight: passIcon.height + Theme.paddingSmall * 2
+
+            Image {
+                id: passIcon
+                width: Theme.iconSizeLauncher
+                height: width
+                anchors.left: parent.left
+                anchors.verticalCenter: parent.verticalCenter
+                anchors.leftMargin: Theme.horizontalPageMargin
+                source: path.indexOf("card:") === 0 ? (iconImage || "image://theme/harbour-passviewer") : "image://zipimage" + path + "/icon.png"
+                fillMode: Image.PreserveAspectFit
+            }
+
+            Label {
+                text: name
+                textFormat: Text.PlainText
+                font.bold: current || (passDisplay.status === Loader.Ready && passDisplay.item.path === path)
+                width: parent.width - passIcon.width - Theme.horizontalPageMargin * 2 - Theme.paddingMedium
+                truncationMode: TruncationMode.Fade
+                color: entry.highlighted ? Theme.highlightColor : archived || past ? Theme.secondaryColor : Theme.primaryColor
+                anchors.left: passIcon.right
+                anchors.verticalCenter: parent.verticalCenter
+                anchors.leftMargin: Theme.paddingMedium
+            }
+
+            Label {
+                text: relevantDate
+                textFormat: Text.PlainText
+                horizontalAlignment: Text.AlignRight
+                font.pixelSize: Theme.fontSizeTiny
+                width: parent.width - passIcon.width - Theme.horizontalPageMargin * 2 - Theme.paddingMedium
+                truncationMode: TruncationMode.Fade
+                color: entry.highlighted ? Theme.highlightColor : archived || past ? Theme.secondaryColor : Theme.primaryColor
+                anchors.right: parent.right
+                anchors.bottom: parent.bottom
+                anchors.rightMargin: Theme.horizontalPageMargin
+                anchors.bottomMargin: Theme.paddingSmall
+            }
+
+            menu: ContextMenu {
+
+                MenuItem {
+                    text: qsTr("Show")
+                    onClicked: {
+                        if (path.indexOf("card:") === 0) {
+                            pageStack.push(Qt.resolvedUrl("ShowCard.qml"), { cardId: path.substring(5) });
+                            return;
+                        }
+                        var properties = { name: name, path: path, jsondata: jsondata, updateable: updateable };
+                        pageStack.push(Qt.resolvedUrl("ShowPass.qml"), properties);
+                        pageStack.pushAttached(Qt.resolvedUrl("ShowBack.qml"), properties);
+                    }
+                }
+
+                MenuItem {
+                    text: qsTr("Change icon")
+                    visible: path.indexOf("card:") === 0
+                    onClicked: pageStack.push(Qt.resolvedUrl("CardIcon.qml"), { cardId: path.substring(5) })
+                }
+
+                MenuItem {
+                    text: qsTr("Update")
+                    visible: updateable
+                    onClicked: {
+                        passHandler.updatePass(path);
+                    }
+                }
+
+                MenuItem {
+                    text: archived ? qsTr("Restore") : qsTr("Move to archive")
+                    onClicked: {
+                        if (!settingsStore.setArchiveState(archiveKey, archived ? 2 : 1))
+                            notificator.bannerNotification(qsTr("Could not change archive status"), "");
+                    }
+                }
+
+                MenuItem {
+                    text: qsTr("Delete")
+                    visible: !bundle
+                    onClicked: {
+                        var delPath = path;
+                        deleteRemorse.execute(entry, qsTr("Deleting"), function(){
+                            if (delPath.indexOf("card:") === 0) {
+                                if (!savedCards.remove(delPath.substring(5))) {
+                                    notificator.bannerNotification(savedCards.error, "");
+                                    return;
+                                }
+                            } else {
+                                passHandler.removePass(delPath);
+                            }
+                            removePass(delPath);
+                            refreshVisiblePasses();
+                        });
+                    }
+                }
+            }
+
+            onClicked: openPass(path, false, true)
+
+            ListView.onAdd: AddAnimation {
+                target: entry
+            }
+
+            ListView.onRemove: RemoveAnimation {
+                target: entry
+            }
+
+            RemorseItem {
+                id: deleteRemorse
+            }
+        }
+    }
 
     Row {
         anchors.fill: parent
 
         SilicaListView {
+            id: passView
+
             width: page.wide ? parent.width - passColumn.width : parent.width
             height: parent.height
+
+            header: Column {
+                width: parent.width
+
+                Item {
+                    width: parent.width
+                    height: page.orientation === Orientation.Portrait ? appWindow.screenCutoutHeight : 0
+                }
+
+                PageHeader {
+                    title: qsTr("Pass Viewer")
+                }
+            }
 
             PullDownMenu {
 
                 MenuItem {
-                    text: qsTr("Copyright")
-                    onClicked: {
-                        pageStack.push(Qt.resolvedUrl("Copyright.qml"));
-                    }
+                    text: qsTr("Archive (%1)").arg(archivedPasses.count)
+                    onClicked: pageStack.push(Qt.resolvedUrl("Archive.qml"), {
+                        passModel: archivedPasses, itemDelegate: passDelegate
+                    })
+                }
+
+                MenuItem {
+                    text: qsTr("Import")
+                    onClicked: pageStack.push(Qt.resolvedUrl("ScanCard.qml"))
                 }
 
                 MenuItem {
@@ -36,102 +191,9 @@ Page {
                 }
             }
 
-            model: ListModel {
-                id: passList
-                ListElement { name: ""; relevantDate: ""; path: ""; points: -1; jsondata: ""; typeId: ""; bundle: false; updateable: false }
-            }
+            model: visiblePasses
 
-            delegate: ListItem {
-                id: entry
-                contentHeight: passIcon.height + Theme.paddingSmall * 2
-
-                Image {
-                    id: passIcon
-                    width: Theme.iconSizeLauncher
-                    height: width
-                    anchors.left: parent.left
-                    anchors.verticalCenter: parent.verticalCenter
-                    anchors.leftMargin: Theme.horizontalPageMargin
-                    source: "image://zipimage" + path + "/icon.png"
-                }
-
-                Label {
-                    text: name
-                    textFormat: Text.PlainText
-                    font.bold: passDisplay.status === Loader.Ready && passDisplay.item.path === path
-                    width: parent.width - passIcon.width - Theme.horizontalPageMargin * 2 - Theme.paddingMedium
-                    truncationMode: TruncationMode.Fade
-                    color: entry.highlighted ? Theme.highlightColor : points != -1 ? Theme.primaryColor : Theme.secondaryColor
-                    anchors.left: passIcon.right
-                    anchors.verticalCenter: parent.verticalCenter
-                    anchors.leftMargin: Theme.paddingMedium
-                }
-
-                Label {
-                    text: relevantDate
-                    textFormat: Text.PlainText
-                    horizontalAlignment: Text.AlignRight
-                    font.pixelSize: Theme.fontSizeTiny
-                    width: parent.width - passIcon.width - Theme.horizontalPageMargin * 2 - Theme.paddingMedium
-                    truncationMode: TruncationMode.Fade
-                    color: entry.highlighted ? Theme.highlightColor : points != -1 ? Theme.primaryColor : Theme.secondaryColor
-                    anchors.right: parent.right
-                    anchors.bottom: parent.bottom
-                    anchors.rightMargin: Theme.horizontalPageMargin
-                    anchors.bottomMargin: Theme.paddingSmall
-                }
-
-                menu: ContextMenu {
-
-                    MenuItem {
-                        text: qsTr("Show")
-                        onClicked: {
-                            var properties = { name: name, path: path, jsondata: jsondata, updateable: updateable };
-                            pageStack.push(Qt.resolvedUrl("ShowPass.qml"), properties);
-                            pageStack.pushAttached(Qt.resolvedUrl("ShowBack.qml"), properties);
-                        }
-                    }
-
-                    MenuItem {
-                        text: qsTr("Update")
-                        visible: updateable
-                        onClicked: {
-                            passHandler.updatePass(path);
-                        }
-                    }
-
-                    MenuItem {
-                        text: qsTr("Delete")
-                        visible: !bundle
-                        onClicked: {
-                            var delPath = path;
-                            deleteRemorse.execute(entry, qsTr("Deleting"), function(){
-                                passHandler.removePass(delPath);
-                                for (var entry = 0; entry < passList.count; entry++) {
-                                    if (passList.get(entry).path === delPath) {
-                                        passList.remove(entry);
-                                        break;
-                                    }
-                                }
-                            });
-                        }
-                    }
-                }
-
-                onClicked: openPass(path, false)
-
-                ListView.onAdd: AddAnimation {
-                    target: entry
-                }
-
-                ListView.onRemove: RemoveAnimation {
-                    target: entry
-                }
-
-                RemorseItem {
-                    id: deleteRemorse
-                }
-            }
+            delegate: passDelegate
 
             VerticalScrollDecorator {}
         }
@@ -153,6 +215,8 @@ Page {
 
                 Loader {
                     id: passDisplay
+
+                    onLoaded: page.selectVisiblePass()
                     active: page.wide
                     enabled: parent.enabled
                     width: parent.width - 2 * Theme.horizontalPageMargin
@@ -162,7 +226,7 @@ Page {
 
                 Button {
                     text: qsTr("Create Calendar Entry")
-                    visible: passDisplay.item.relevantDate !== ""
+                    visible: passDisplay.status === Loader.Ready && passDisplay.item.relevantDate !== ""
                     anchors.horizontalCenter: parent.horizontalCenter
                     onClicked: {
                         passHandler.createCalendarEntry(passList.get(getPass(passDisplay.item.path)).name, passDisplay.item.relevantDate);
@@ -171,7 +235,8 @@ Page {
 
                 Button {
                     text: qsTr("Update")
-                    visible: passList.get(getPass(passDisplay.item.path)).updateable
+                    visible: passDisplay.status === Loader.Ready && getPass(passDisplay.item.path) !== null
+                             && passList.get(getPass(passDisplay.item.path)).updateable
                     anchors.horizontalCenter: parent.horizontalCenter
                     onClicked: {
                         passHandler.updatePass(passDisplay.item.path);
@@ -180,6 +245,8 @@ Page {
 
                 Loader {
                     id: backDisplay
+
+                    onLoaded: page.selectVisiblePass()
                     active: page.wide
                     enabled: parent.enabled
                     width: parent.width - 2 * Theme.horizontalPageMargin
@@ -201,9 +268,9 @@ Page {
 
     Label {
         anchors.centerIn: parent
-        text: qsTr("No passes found")
+        text: qsTr("No passes or cards")
         color: Theme.highlightColor
-        visible: passList.count == 0 && !busy.running
+        visible: visiblePasses.count == 0 && !busy.running
     }
 
     Timer {
@@ -223,7 +290,7 @@ Page {
     }
 
     Component.onCompleted: {
-        // initial pass scan
+        // Load the app-owned library, without searching personal folders.
         passList.clear();
         homeWatcher.scanHome();
     }
@@ -231,6 +298,9 @@ Page {
     Connections {
         target: homeWatcher
         onPassesFound: {
+            var cards = savedCards.passes();
+            for (var card = 0; card < cards.length; card++)
+                list.push(cards[card]);
             // check for vanished passes...
             var removePasses = [];
             for (var oldpass = 0; oldpass < passList.count; oldpass++) {
@@ -262,8 +332,10 @@ Page {
             if (busy.running) {
                 busy.running = false;
                 checkTimer.start();
-                if (Qt.application.arguments.length === 2)
-                    openPass(Qt.application.arguments[1]);
+                var origin = page.pendingOpen || (Qt.application.arguments.length === 2 ? Qt.application.arguments[1] : "");
+                page.pendingOpen = "";
+                if (origin.length)
+                    openPass(origin);
             }
             // report a successful update and redraw the pass, if it's shown
             if (update) {
@@ -280,18 +352,20 @@ Page {
                     catch(e) {}
                 }
             }
-            // wide mode: show the first pass if there isn't one yet or if it vanished
-            if (page.wide && (passDisplay.item.path === '' || getPass(passDisplay.item.path) === null)) {
-                passDisplay.item.path = passList.get(0).path;
-                passDisplay.item.jsondata = passList.get(0).jsondata;
-                backDisplay.item.jsondata = passList.get(0).jsondata;
-            }
+            selectVisiblePass();
         }
+    }
+
+    Connections {
+        target: savedCards
+        onChanged: homeWatcher.scanHome()
     }
 
     Connections {
         target: settingsStore
         onSortByChanged: checkPassList()
+        onArchiveAfterHoursChanged: checkPassList()
+        onArchiveStateChanged: checkPassList()
         onCheckTimeChanged: checkPassList()
         onHoursBeforeChanged: checkPassList()
         onHoursAfterChanged: checkPassList()
@@ -330,13 +404,7 @@ Page {
         onOpenPass: {
             openPass(origin);
         }
-        onOrientationChanged: {
-            if (page.wide && (passDisplay.item.path === '' || getPass(passDisplay.item.path) === null)) {
-                passDisplay.item.path = passList.get(0).path;
-                passDisplay.item.jsondata = passList.get(0).jsondata;
-                backDisplay.item.jsondata = passList.get(0).jsondata;
-            }
-        }
+        onOrientationChanged: selectVisiblePass()
     }
 
     DBusAdaptor {
@@ -369,18 +437,30 @@ Page {
         }
     }
 
-    function openPass(origin, immediate) {
+    function openPass(origin, immediate, keepListPage) {
         if (typeof immediate === 'undefined')
             immediate = true;
         // bring the app to the foreground
         appWindow.activate();
+        if (!origin || origin.length === 0)
+            return;
+        if (busy.running) {
+            page.pendingOpen = origin;
+            return;
+        }
+        if (origin.indexOf("card:") === 0) {
+            if (!keepListPage)
+                pageStack.pop(page, PageStackAction.Immediate);
+            pageStack.push(Qt.resolvedUrl("ShowCard.qml"), { cardId: origin.substring(5) });
+            return;
+        }
         // get the canonical path
         origin = passHandler.getCanonicalPath(origin);
         // look for a matching pass
         var pass = getPass(origin);
         if (pass !== null) {
             // found one: let's show it
-            if (passDisplay.status === Loader.Ready && backDisplay.status === Loader.Ready) {
+            if (pageStack.currentPage === page && passDisplay.status === Loader.Ready && backDisplay.status === Loader.Ready) {
                 // on wide screen
                 passDisplay.item.path = passList.get(pass).path;
                 passDisplay.item.jsondata = passList.get(pass).jsondata;
@@ -389,13 +469,18 @@ Page {
             else {
                 // on small screen
                 var properties = { name: passList.get(pass).name, path: passList.get(pass).path, jsondata: passList.get(pass).jsondata, updateable: passList.get(pass).updateable };
-                pageStack.pop(page, PageStackAction.Immediate);
+                if (!keepListPage)
+                    pageStack.pop(page, PageStackAction.Immediate);
                 if (immediate)
                     pageStack.push(Qt.resolvedUrl("ShowPass.qml"), properties, PageStackAction.Immediate);
                 else
                     pageStack.push(Qt.resolvedUrl("ShowPass.qml"), properties);
                 pageStack.pushAttached(Qt.resolvedUrl("ShowBack.qml"), properties);
             }
+        }
+        else {
+            pageStack.pop(page, PageStackAction.Immediate);
+            pageStack.push(Qt.resolvedUrl("ImportPass.qml"), { origin: origin });
         }
     }
 
@@ -430,12 +515,19 @@ Page {
             if (oldpoints !== -1 && newpasses[pass].points === -1)
                 notificator.removeNotification(newpasses[pass].path);
         }
-        // if the topmost pass is active, show it on the cover
-        if (passList.count > 0 && passList.get(0).points !== -1) {
-            var icon = "image://zipimage" + passList.get(0).path + "/icon.png";
+        refreshVisiblePasses();
+        // Timeline order is independent of which pass is most relevant now.
+        var top = null;
+        for (var index = 0; index < passList.count; index++) {
+            var candidate = passList.get(index);
+            if (candidate.points !== -1 && (top === null || candidate.points < top.points))
+                top = candidate;
+        }
+        if (top !== null) {
+            var icon = "image://zipimage" + top.path + "/icon.png";
             if (topIcon !== icon) {
                 topIcon = icon;
-                topPath = passList.get(0).path;
+                topPath = top.path;
             }
         }
         else {
@@ -443,6 +535,67 @@ Page {
                 topIcon = "";
                 topPath = "";
             }
+        }
+    }
+
+    function refreshVisiblePasses() {
+        var rows = [];
+        var archiveRows = [];
+        for (var index = 0; index < passList.count; index++) {
+            var pass = passList.get(index);
+            var row = {};
+            for (var key in pass)
+                row[key] = pass[key];
+            if (pass.archived)
+                archiveRows.push(row);
+            else
+                rows.push(row);
+        }
+        page.hasImportedPasses = rows.some(function(row) { return row.path.indexOf("card:") !== 0; });
+        updateVisibleModel(visiblePasses, rows);
+        updateVisibleModel(archivedPasses, archiveRows);
+        selectVisiblePass();
+    }
+
+    function updateVisibleModel(model, rows) {
+        // Update in place so minute-by-minute checks don't reset scrolling.
+        for (var rowIndex = 0; rowIndex < rows.length; rowIndex++) {
+            var found = -1;
+            for (var old = rowIndex; old < model.count; old++) {
+                if (model.get(old).path === rows[rowIndex].path) {
+                    found = old;
+                    break;
+                }
+            }
+            if (found < 0) {
+                model.insert(rowIndex, rows[rowIndex]);
+            } else {
+                if (found !== rowIndex)
+                    model.move(found, rowIndex, 1);
+                model.set(rowIndex, rows[rowIndex]);
+            }
+        }
+        if (model.count > rows.length)
+            model.remove(rows.length, model.count - rows.length);
+    }
+
+    function selectVisiblePass() {
+        if (!page.wide || passDisplay.status !== Loader.Ready || backDisplay.status !== Loader.Ready)
+            return;
+        var first = null;
+        for (var index = 0; index < visiblePasses.count; index++) {
+            var pass = visiblePasses.get(index);
+            if (pass.path.indexOf("card:") !== 0) {
+                if (pass.path === passDisplay.item.path)
+                    return;
+                if (first === null)
+                    first = pass;
+            }
+        }
+        if (first !== null) {
+            passDisplay.item.path = first.path;
+            passDisplay.item.jsondata = first.jsondata;
+            backDisplay.item.jsondata = first.jsondata;
         }
     }
 
@@ -470,34 +623,26 @@ Page {
         /* Lower numbers are more relevant, but -1 means "not active".
            This is because "null" is not allowed in models. */
         pass.points = -1;
+        pass.iconImage = pass.iconImage || "";
         var data = JSON.parse(pass.jsondata);
         var close = false;
-        if ("relevantDate" in data) {
-            pass.relevantDate = dateTimeFormat.format(data.relevantDate, "medium", "short", false);
-            pass.rdate = new Date(data.relevantDate);
-        }
-        else {
-            pass.relevantDate = "";
-            pass.rdate = null;
-        }
-        if (settingsStore.checkTime && "relevantDate" in data) {
-            // close to target time?
-            try {
-                var targetTime = new Date(data.relevantDate);
-            }
-            catch(e) {
-                notificator.removeNotification(pass.path);
-                return false;  // faulty pass
-            }
-            var now = new Date();
-            var timeDiff = targetTime - now;  // time difference in milliseconds
-            if (timeDiff >= 0 && timeDiff <= settingsStore.hoursBefore * 3600000) {
-                pass.points = timeDiff / 1000;
-            }
-            else if (timeDiff < 0 && Math.abs(timeDiff) <= settingsStore.hoursAfter * 3600000) {
-                pass.points = Math.abs(timeDiff) / 1000;
-            }
-        }
+        var now = Date.now();
+        pass.archiveKey = Timeline.archiveKey(pass.path, data);
+        var state = Timeline.classify(data, now, settingsStore.hoursBefore,
+                                      settingsStore.hoursAfter, settingsStore.archiveAfterHours,
+                                      settingsStore.archiveState(pass.archiveKey));
+        pass.eventTime = state.eventTime;
+        pass.expiryTime = state.expiryTime;
+        pass.archived = state.archived;
+        pass.past = state.inactive;
+        pass.current = settingsStore.checkTime && state.current;
+        pass.timelineSection = state.section;
+        pass.relevantDate = state.eventTime
+                ? dateTimeFormat.format(data.relevantDate, "medium", "short", false) : "";
+        if (pass.archived || state.inactive)
+            return false;
+        if (pass.current)
+            pass.points = Math.abs(state.eventTime - now) / 1000;
         if (pass.points === -1 && settingsStore.checkDistance && "locations" in data && locator.valid && locator.position.latitudeValid && locator.position.longitudeValid) {
             // close to one of the target destinations?
             var here = locator.position.coordinate;
@@ -525,42 +670,7 @@ Page {
     }
 
     function comparePasses(a, b) {
-        switch(settingsStore.sortBy) {
-        case 0:  // relevancy
-            // sort active passes to the top
-            // "smaller" passes get sorted upwards
-            if (a.points !== -1 && b.points === -1)
-                return -1;
-            if (a.points === -1 && b.points !== -1)
-                return 1;
-            // if both are active, check who's more relevant
-            if (a.points !== b.points)
-                return a.points - b.points;
-            // group by pass type ID
-            if (a.typeId !== b.typeId)
-                return a.typeId.localeCompare(b.typeId);
-            // otherwise order by name
-            return a.name.localeCompare(b.name);
-        case 1:  // event date
-            if (a.rdate !== null) {
-                if (b.rdate !== null)
-                    return b.rdate - a.rdate;
-                else
-                    return b.mtime - a.rdate;
-            }
-            else {
-                if (b.rdate !== null)
-                    return b.rdate - a.mtime;
-                else
-                    return b.mtime - a.mtime;
-            }
-        case 2:  // file date
-            return b.mtime - a.mtime;
-        case 3: // event name
-            return a.name.localeCompare(b.name);
-        default:
-            return 0;
-        }
+        return Timeline.compare(a, b, settingsStore.sortBy);
     }
 
     function checkPassList() {
@@ -570,7 +680,9 @@ Page {
         for (var pass = 0; pass < passList.count; pass++) {
             // we work with a copy
             var modelPass = passList.get(pass);
-            var thisPass = { name: modelPass.name, relevantDate: modelPass.relevantDate, path: modelPass.path, points: modelPass.points, jsondata: modelPass.jsondata, typeId: modelPass.typeId, updateable: modelPass.updateable };
+            var thisPass = {};
+            for (var key in modelPass)
+                thisPass[key] = modelPass[key];
             if (calcPointsAndTime(thisPass))
                 close = true;
             passes.push(thisPass);

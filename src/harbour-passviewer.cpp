@@ -18,6 +18,11 @@
 #include "currencyformat.h"
 #include "passhandler.h"
 #include "passdb.h"
+#include "savedcards.h"
+#include "barcodescanner.h"
+#include "cardicons.h"
+#include "barcodecodec.h"
+#include "passimporter.h"
 
 
 int main(int argc, char *argv[])
@@ -35,6 +40,15 @@ int main(int argc, char *argv[])
         other.call("openPass", origin);
         return 0;
     }
+
+    qmlRegisterType<CardIcons>("PassViewer", 1, 0, "CardIcons");
+    qmlRegisterType<PassImporter>("PassViewer", 1, 0, "PassImporter");
+    qmlRegisterType<BarcodeScanner>("PassViewer", 1, 0, "BarcodeScanner");
+    SavedCards savedCards;
+    view->rootContext()->setContextProperty("savedCards", &savedCards);
+
+    BarcodeCodec barcodeCodec;
+    view->rootContext()->setContextProperty("barcodeCodec", &barcodeCodec);
 
     SettingsStore settingsStore;
     view->rootContext()->setContextProperty("settingsStore", &settingsStore);
@@ -66,4 +80,3 @@ int main(int argc, char *argv[])
     view->show();
     return app->exec();
 }
-

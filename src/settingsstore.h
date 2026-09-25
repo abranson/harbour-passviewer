@@ -10,6 +10,7 @@ class SettingsStore : public QObject
 public:
     explicit SettingsStore(QObject *parent = 0);
 
+    Q_PROPERTY(int archiveAfterHours READ archiveAfterHours WRITE setArchiveAfterHours NOTIFY archiveAfterHoursChanged)
     Q_PROPERTY(int sortBy READ sortBy WRITE setSortBy NOTIFY sortByChanged)
     Q_PROPERTY(bool checkTime READ checkTime WRITE setCheckTime NOTIFY checkTimeChanged)
     Q_PROPERTY(int hoursBefore READ hoursBefore WRITE setHoursBefore NOTIFY hoursBeforeChanged)
@@ -20,6 +21,10 @@ public:
     Q_PROPERTY(bool overrideDistance READ overrideDistance WRITE setOverrideDistance NOTIFY overrideDistanceChanged)
     Q_PROPERTY(bool barcodeTap READ barcodeTap WRITE setBarcodeTap NOTIFY barcodeTapChanged)
 
+    Q_INVOKABLE int archiveState(const QString &key);
+    Q_INVOKABLE bool setArchiveState(const QString &key, int state);
+    int archiveAfterHours();
+    void setArchiveAfterHours(int value);
     int sortBy();
     void setSortBy(int value);
     bool checkTime();
@@ -40,6 +45,8 @@ public:
     void setBarcodeTap(bool value);
 
 signals:
+    void archiveStateChanged();
+    void archiveAfterHoursChanged();
     void sortByChanged();
     void checkTimeChanged();
     void hoursBeforeChanged();

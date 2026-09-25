@@ -1,4 +1,5 @@
 #include <QCoreApplication>
+#include <QCryptographicHash>
 #include <QSettings>
 #include <QStandardPaths>
 #include "settingsstore.h"
@@ -8,6 +9,49 @@ SettingsStore::SettingsStore(QObject *parent) :
     m_settings(QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation) + "/" + QCoreApplication::applicationName() + ".conf",
              QSettings::NativeFormat)
 {
+    if (!m_settings.contains("timeline/archive_after_hours")) {
+        // Migrate once, then keep archiving independent of the highlight window.
+        const int delay = m_settings.value("timeline/archive_past", true).toBool() ? hoursAfter() : -1;
+        m_settings.setValue("timeline/archive_after_hours", delay);
+    }
+}
+
+int SettingsStore::archiveState(const QString &key) {
+    const QString digest = QString::fromLatin1(QCryptographicHash::hash(key.toUtf8(), QCryptographicHash::Sha256).toHex());
+    return m_settings.value("timeline/items/" + digest, 0).toInt();
+}
+
+bool SettingsStore::setArchiveState(const QString &key, int state) {
+    if (key.isEmpty() || state < 0 || state > 2)
+        return false;
+    // 0 follows dates, 1 is manually archived, 2 is explicitly kept in the list.
+    const QString digest = QString::fromLatin1(QCryptographicHash::hash(key.toUtf8(), QCryptographicHash::Sha256).toHex());
+    const QString setting = "timeline/items/" + digest;
+    const QVariant previous = m_settings.value(setting);
+    m_settings.setValue(setting, state);
+    m_settings.sync();
+    if (m_settings.status() != QSettings::NoError) {
+        if (previous.isValid())
+            m_settings.setValue(setting, previous);
+        else
+            m_settings.remove(setting);
+        return false;
+    }
+    emit archiveStateChanged();
+    return true;
+}
+
+int SettingsStore::archiveAfterHours() {
+    return m_settings.value("timeline/archive_after_hours", 4).toInt();
+}
+
+void SettingsStore::setArchiveAfterHours(int value) {
+    if (value < -1 || value > 720)
+        return;
+    int oldValue = archiveAfterHours();
+    m_settings.setValue("timeline/archive_after_hours", value);
+    if (value != oldValue)
+        emit archiveAfterHoursChanged();
 }
 
 int SettingsStore::sortBy() {

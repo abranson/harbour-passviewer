@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mime-info xmlns="http://www.freedesktop.org/standards/shared-mime-info">
+  <mime-type type="application/vnd.apple.pkpass">
+    <comment>Wallet pass</comment>
+    <sub-class-of type="application/zip"/>
+    <glob pattern="*.pkpass"/>
+  </mime-type>
+  <mime-type type="application/vnd.apple.pkpasses">
+    <comment>Wallet pass bundle</comment>
+    <sub-class-of type="application/zip"/>
+    <glob pattern="*.pkpasses"/>
+  </mime-type>
+</mime-info>

@@ -1,7 +1,18 @@
 This is a simple viewer for PassBook® files.
 
-The app searches the file system, starting in the home directory, for passes,
-and shows them in a list. A tap on the pass shows the details including the
+Open a .pkpass file or .pkpasses bundle from Downloads, a file manager, or
+"Open pass file" on the Import page. Confirm the listed passes to copy them
+into the app's private data directory, alongside saved cards. The app no
+longer searches personal folders for passes. Previously discovered files
+need to be opened and imported; the original files are left untouched.
+Imported passes remain available after the source download is deleted.
+Passes with the same issuer and serial number replace the existing copy
+after confirmation. Bundles are validated before any passes are imported.
+Imported pass barcodes use the system ZXing writer, preserving the message's
+declared byte encoding. Generated QR, Aztec, PDF417 and Code 128 images are
+decoded again and checked against those bytes before display. Unsupported or
+unrepresentable messages show an error instead of a substituted barcode.
+A tap on the pass shows the details including the
 barcode (usually the most important thing). The design is simplified compared
 to the original app, but should be readable.
 
@@ -10,3 +21,36 @@ highlight passes close to relevant coordinates (check settings). The top
 highlighted pass is shown on the cover, with the cover action opening the pass
 directly.
 
+
+Saved cards
+-----------
+Use "Import" in the pull-down menu to scan a barcode or QR code, give it a
+name, and save it alongside imported passes. Use "Choose image" below the
+viewfinder to read a code from a photo or screenshot instead. Crop images with multiple codes
+to the one you want before importing. Tap a saved card to display its
+code; tap the code to show it fullscreen. Long-press the list entry to delete it.
+Cards stay in the app's private data directory and are available offline.
+Scanned cards live in its cards/ directory; imported pass packages in passes/.
+Use "Change icon" in a saved card's menu (or long-press its list entry) to
+search Iconify's brand and general icon catalogs or choose an image. Preview
+the icon, optionally adjust a square crop, then tap "Use icon". Icons are
+stored with the card for offline display; catalog source and license details
+remain available on the icon page. "Use default icon" removes a custom icon.
+The camera uses a square viewfinder: keep the code inside it, pinch to zoom,
+and tap the code to focus. Continuous autofocus resumes after five seconds.
+
+Scanning requires camera permission, Qt Multimedia, and ZXing >= 3.0.2 (available
+in the Sailfish OS 5.2 SDK). The app remains compatible with Qt 5.6; the ZXing
+headers require a C++17 compiler. Common QR, Code 128, Code 39, EAN/UPC, ITF,
+Aztec, Data Matrix and PDF417 codes are supported. Each saved image is checked
+against the scanned format and bytes. Codes that cannot be reproduced faithfully,
+including incomplete multi-symbol codes, are rejected. Rotating or time-limited
+codes retain the value scanned and are not refreshed automatically.
+
+Undated cards appear before the timeline of dated passes, newest first, with
+current passes in bold. The Archive page holds automatically and manually
+archived items. Long-press an entry to archive or restore it. In Settings, the
+Time section has an independent auto-archive delay, including Never. Archiving
+does not move or delete the original files. Restored items stay in the main list.
+
+See tests/README.md for tests and device validation.

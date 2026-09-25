@@ -7,8 +7,6 @@
 #include <QImage>
 #include <QPixmap>
 
-#include "zint/zint.h"
-
 class BarcodeImageProvider : public QQuickImageProvider
 {
 public:

@@ -1,11 +1,11 @@
 Name: harbour-passviewer
 Summary: Pass Viewer
-Version: 1.7
-Release: 2
+Version: 2.0
+Release: 1
 # The contents of the Group field should be one of the groups listed here:
 # http://gitorious.org/meego-developer-tools/spectacle/blobs/master/data/GROUPS
 Group: Applications/Productivity
-URL: https://bitbucket.org/christof_buergi/harbour-passviewer/
+URL: https://github.com/abranson/harbour-passviewer
 License: MIT/BSD
 # This must be generated before uploading a package to a remote build service.
 # Usually this line does not need to be modified.
@@ -29,6 +29,9 @@ PkgConfigBR:
   - Qt5Sql
   - Qt5Positioning
   - Qt5DBus
+  - Qt5Multimedia
+  - Qt5Concurrent
+  - zxing >= 3.0.2
   - liblzma
   - nemonotifications-qt5
 PkgBR:
@@ -44,14 +47,23 @@ Requires:
   - qt5-qtdeclarative-import-positioning >= 5.2
   - nemo-qml-plugin-notifications-qt5
   - nemo-qml-plugin-dbus-qt5
+  - qt5-qtdeclarative-import-multimedia
+  - sailfish-components-pickers-qt5
+  - qt5-qtsvg-plugin-imageformat-svg
+
+RequiresPost:
+  - shared-mime-info
+RequiresPostUn:
+  - shared-mime-info
 
 # All installed files
 Files:
-  - '%{_bindir}'
+  - '%defattr(-,root,root,755)'
+  - '%{_bindir}/%{name}'
   - '%{_datadir}/%{name}'
   - '%{_datadir}/applications/%{name}.desktop'
   - '%{_datadir}/icons/hicolor/*/apps/%{name}.png'
+  - '%{_datadir}/mime/packages/%{name}.xml'
 
 # For more information about yaml and what's supported in Sailfish OS
 # build system, please see https://wiki.merproject.org/wiki/Spectacle
-

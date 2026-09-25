@@ -2,11 +2,13 @@ import QtQuick 2.0
 import Sailfish.Silica 1.0
 
 Page {
+    id: page
+
     allowedOrientations: Orientation.All
 
     SilicaFlickable {
         anchors.fill: parent
-        contentHeight: copyrightText.height + Theme.paddingLarge * 2
+        contentHeight: copyrightText.y + copyrightText.height + Theme.paddingLarge
 
         Label {
             id: copyrightText
@@ -15,7 +17,7 @@ Page {
             anchors.top: parent.top
             anchors.leftMargin: Theme.horizontalPageMargin
             anchors.rightMargin: Theme.horizontalPageMargin
-            anchors.topMargin: Theme.paddingLarge
+            anchors.topMargin: Theme.paddingLarge + (page.orientation === Orientation.Portrait ? appWindow.screenCutoutHeight : 0)
             anchors.bottomMargin: Theme.paddingLarge
             color: Theme.highlightColor
             font.pixelSize: Theme.fontSizeTiny
@@ -23,6 +25,7 @@ Page {
             text: { return "<style>a:link { color: " + Theme.primaryColor + "; }</style>" +
                     "<p>Copyright (c) 2015 Christof Bürgi</p>" +
                     "<p>Copyright (c) 2024 Carmen F. B. (correction of settings saving)</p>" +
+                    "<p>Copyright (c) 2026 Andrew Branson</p>" +
                     "<p>Permission is hereby granted, free of charge, to any person obtaining a copy " +
                     "of this software and associated documentation files (the &quot;Software&quot;), to deal " +
                     "in the Software without restriction, including without limitation the rights " +

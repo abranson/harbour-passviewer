@@ -7,8 +7,8 @@ HomeWatcher::HomeWatcher(QObject *parent) :
     HomeScanner* scanner = new HomeScanner;
     scanner->moveToThread(&m_worker);
     connect(&m_worker, &QThread::finished, scanner, &HomeScanner::deleteLater);
-    connect(this, SIGNAL(workerScanHome(bool)), scanner, SLOT(scanHome(bool)));
-    connect(this, SIGNAL(directoryChanged(QString)), scanner, SLOT(scanHome(QString)));
+    connect(this, &HomeWatcher::workerScanHome, scanner, static_cast<void (HomeScanner::*)(bool)>(&HomeScanner::scanHome));
+    connect(this, &QFileSystemWatcher::directoryChanged, scanner, static_cast<void (HomeScanner::*)(QString)>(&HomeScanner::scanHome));
     connect(scanner, &HomeScanner::passesFound, this, &HomeWatcher::passesFoundByWorker);
     m_worker.start();
 }
