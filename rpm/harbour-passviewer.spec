@@ -14,7 +14,7 @@ Name:       harbour-passviewer
 %{?qtc_builddir:%define _builddir %qtc_builddir}
 Summary:    Pass Viewer
 Version:    2.0
-Release:    1
+Release:    5
 Group:      Applications/Productivity
 License:    MIT/BSD
 URL:        https://github.com/abranson/harbour-passviewer
@@ -25,6 +25,7 @@ Requires:   qt5-qtdeclarative-import-positioning >= 5.2
 Requires:   nemo-qml-plugin-notifications-qt5
 Requires:   nemo-qml-plugin-dbus-qt5
 Requires:   qt5-qtdeclarative-import-multimedia
+Requires:   sailfishshare-components
 Requires:   sailfish-components-pickers-qt5
 Requires:   qt5-qtsvg-plugin-imageformat-svg
 Requires(post): shared-mime-info

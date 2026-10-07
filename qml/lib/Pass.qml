@@ -30,6 +30,8 @@ Rectangle {
     property string barcodeEncoding: ''
     property string barcodeContent: ''
     property string barcodeAltText: ''
+    readonly property alias barcodeSource: barcodeImage.source
+    property string barcodeImageSource
     property string barcodeError
 
     height: body.height + Theme.paddingMedium * 2
@@ -324,7 +326,7 @@ Rectangle {
 
         Column {
             width: parent.width
-            visible: barcodeType != '' && barcodeEncoding != '' && barcodeContent != ''
+            visible: barcodeImageSource.length > 0 || (barcodeType != '' && barcodeEncoding != '' && barcodeContent != '')
 
             Rectangle {
                 width: barcodeImage.width + Theme.fontSizeMedium // 0.5em border
@@ -338,13 +340,13 @@ Rectangle {
                     width: sourceSize.width !== 0 ? Utils.barcodeSize(sourceSize.width, sourceSize.height, body.width, Theme.fontSizeMedium)[0] : 0
                     height: sourceSize.height !== 0 ? Utils.barcodeSize(sourceSize.width, sourceSize.height, body.width, Theme.fontSizeMedium)[1] : 0
                     smooth: false
-                    source: barcodeContent.length ? "image://barcode/" + barcodeType + "/" + barcodeEncoding + "/" + barcodeContent : "";
+                    source: barcodeImageSource.length ? barcodeImageSource : barcodeContent.length ? "image://barcode/" + barcodeType + "/" + barcodeEncoding + "/" + barcodeContent : "";
                 }
 
                 MouseArea {
                     anchors.fill: parent
                     enabled: settingsStore.barcodeTap
-                    onClicked: pageStack.push(Qt.resolvedUrl("../pages/ShowCodeFullscreen.qml"), { barcodeContent: barcodeContent, barcodeEncoding: barcodeEncoding, barcodeType: barcodeType })
+                    onClicked: pageStack.push(Qt.resolvedUrl("../pages/ShowCodeFullscreen.qml"), { coverIconSource: "image://zipimage" + path + "/icon.png", barcodeImageSource: barcodeImageSource, barcodeContent: barcodeContent, barcodeEncoding: barcodeEncoding, barcodeType: barcodeType })
                 }
             }
 
@@ -489,6 +491,7 @@ Rectangle {
         update_marks(secondaryFields, changes);
         update_marks(tertiaryFields, changes);
         update_primary_marks(changes);
+        barcodeImageSource = Utils.sharedBarcodeImage(pass, path);
         var barcode = Utils.selectBarcode(pass, barcodeCodec);
         barcodeContent = "";
         barcodeType = barcode.type;

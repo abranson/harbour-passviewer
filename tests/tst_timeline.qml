@@ -81,7 +81,7 @@ TestCase {
                     row("Undated", {}),
                     row("Future", { relevantDate: "2026-09-27T12:00:00Z" }),
                     row("Older", { relevantDate: "2026-09-19T12:00:00Z" })]
-        rows.sort(function(a, b) { return Timeline.compare(a, b, 0) })
+        rows.sort(function(a, b) { return Timeline.compare(a, b) })
         compare(rows.map(function(value) { return value.name }).join(","), "Undated,Future,Current,Old,Older")
     }
 

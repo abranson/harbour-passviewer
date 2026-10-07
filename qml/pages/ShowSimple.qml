@@ -9,10 +9,13 @@ Page {
 
     property string jsondata: ''
     property string path: ''
+    readonly property url coverIconSource: path.length ? "image://zipimage" + path + "/icon.png" : ""
+    readonly property alias coverBarcodeSource: barcodeImage.source
     property string barcodeType: "qr"
     property string barcodeEncoding: "iso-8859-1"
     property string barcodeContent: ""
     property string barcodeAltText: ""
+    property string barcodeImageSource
     property string barcodeError
 
     SilicaFlickable {
@@ -20,11 +23,15 @@ Page {
         contentHeight: body.y + body.height + Theme.paddingLarge
 
         PullDownMenu {
+            MenuItem {
+                text: qsTr("Share")
+                onClicked: appWindow.sharePass(page.path)
+            }
 
             MenuItem {
                 text: qsTr("Fullscreen Barcode")
                 onClicked: {
-                    pageStack.push(Qt.resolvedUrl("ShowCodeFullscreen.qml"), { barcodeContent: barcodeContent, barcodeEncoding: barcodeEncoding, barcodeType: barcodeType });
+                    pageStack.push(Qt.resolvedUrl("ShowCodeFullscreen.qml"), { coverIconSource: page.coverIconSource, barcodeImageSource: barcodeImageSource, barcodeContent: barcodeContent, barcodeEncoding: barcodeEncoding, barcodeType: barcodeType });
                 }
             }
         }
@@ -111,13 +118,13 @@ Page {
                     height: sourceSize.height !== 0 ? Utils.barcodeSize(sourceSize.width, sourceSize.height, body.width, Theme.fontSizeMedium)[1] : 0
                     smooth: false
                     fillMode: Image.PreserveAspectFit
-                    source: barcodeContent.length ? "image://barcode/" + barcodeType + "/" + barcodeEncoding + "/" + barcodeContent : "";
+                    source: barcodeImageSource.length ? barcodeImageSource : barcodeContent.length ? "image://barcode/" + barcodeType + "/" + barcodeEncoding + "/" + barcodeContent : "";
                 }
 
                 MouseArea {
                     anchors.fill: parent
                     enabled: settingsStore.barcodeTap
-                    onClicked: pageStack.push(Qt.resolvedUrl("ShowCodeFullscreen.qml"), { barcodeContent: barcodeContent, barcodeEncoding: barcodeEncoding, barcodeType: barcodeType })
+                    onClicked: pageStack.push(Qt.resolvedUrl("ShowCodeFullscreen.qml"), { coverIconSource: page.coverIconSource, barcodeImageSource: barcodeImageSource, barcodeContent: barcodeContent, barcodeEncoding: barcodeEncoding, barcodeType: barcodeType })
                 }
             }
 
@@ -215,6 +222,7 @@ Page {
         setFields(pass, style, 'primaryFields', frontFields);
         setFields(pass, style, 'secondaryFields', frontFields);
         setFields(pass, style, 'auxiliaryFields', frontFields);
+        barcodeImageSource = Utils.sharedBarcodeImage(pass, path);
         var barcode = Utils.selectBarcode(pass, barcodeCodec);
         barcodeContent = "";
         barcodeType = barcode.type;

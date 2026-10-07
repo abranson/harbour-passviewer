@@ -17,9 +17,10 @@ barcode (usually the most important thing). The design is simplified compared
 to the original app, but should be readable.
 
 Passes close to the relevant time are highlighted. It's also possible to
-highlight passes close to relevant coordinates (check settings). The top
-highlighted pass is shown on the cover, with the cover action opening the pass
-directly.
+highlight passes close to relevant coordinates (check settings). The cover displays the barcode of the pass or card currently open in a detail
+view. The code is fitted inside a white square, with a small app icon above and the
+pass/card icon below. When no code is open, the cover shows the large app icon
+and Pass Viewer title.
 
 
 Saved cards
@@ -47,10 +48,29 @@ against the scanned format and bytes. Codes that cannot be reproduced faithfully
 including incomplete multi-symbol codes, are rejected. Rotating or time-limited
 codes retain the value scanned and are not refreshed automatically.
 
-Undated cards appear before the timeline of dated passes, newest first, with
+The list always uses timeline order: undated cards first, then dated passes newest first, with
 current passes in bold. The Archive page holds automatically and manually
 archived items. Long-press an entry to archive or restore it. In Settings, the
 Time section has an independent auto-archive delay, including Never. Archiving
 does not move or delete the original files. Restored items stay in the main list.
 
 See tests/README.md for tests and device validation.
+
+Sharing
+-------
+Use Share in a pass/card menu or long-press menu to open Sailfish sharing.
+Imported passes are shared unchanged, including their issuer signatures.
+Scanned cards are exported locally as unsigned .pkpass files with their name,
+icon and original barcode image. QR, Aztec, PDF417 and Code 128 also include
+standard barcode fields when those can preserve the scanned code's semantics.
+Other formats and GS1/ECI variants retain their exact image rather than being
+converted to another barcode type. Pass Viewer displays that image in normal,
+simple and fullscreen views; other viewers may use the included strip image.
+These generated unsigned passes are not intended for Apple Wallet, which
+requires passes signed with an Apple-issued certificate.
+
+Sharing uses owner-only files in the application's shared-passes/ cache.
+Snapshots remain available after the sharing sheet closes or the app exits,
+so delayed transfers do not lose their attachments. They can be removed by
+clearing the app cache once transfers have finished. Original passes and saved
+cards are not modified. Icon attribution is included in exported passes.

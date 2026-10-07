@@ -54,17 +54,6 @@ void SettingsStore::setArchiveAfterHours(int value) {
         emit archiveAfterHoursChanged();
 }
 
-int SettingsStore::sortBy() {
-    return m_settings.value("sort/sort_by", 0).toInt();
-}
-
-void SettingsStore::setSortBy(int value) {
-    int oldValue = sortBy();
-    m_settings.setValue("sort/sort_by", value);
-    if (value != oldValue)
-        emit sortByChanged();
-}
-
 bool SettingsStore::checkTime() {
     return m_settings.value("time/check", true).toBool();
 }

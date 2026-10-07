@@ -1,7 +1,7 @@
 Name: harbour-passviewer
 Summary: Pass Viewer
 Version: 2.0
-Release: 1
+Release: 5
 # The contents of the Group field should be one of the groups listed here:
 # http://gitorious.org/meego-developer-tools/spectacle/blobs/master/data/GROUPS
 Group: Applications/Productivity
@@ -48,6 +48,7 @@ Requires:
   - nemo-qml-plugin-notifications-qt5
   - nemo-qml-plugin-dbus-qt5
   - qt5-qtdeclarative-import-multimedia
+  - sailfishshare-components
   - sailfish-components-pickers-qt5
   - qt5-qtsvg-plugin-imageformat-svg
 

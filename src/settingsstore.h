@@ -11,7 +11,6 @@ public:
     explicit SettingsStore(QObject *parent = 0);
 
     Q_PROPERTY(int archiveAfterHours READ archiveAfterHours WRITE setArchiveAfterHours NOTIFY archiveAfterHoursChanged)
-    Q_PROPERTY(int sortBy READ sortBy WRITE setSortBy NOTIFY sortByChanged)
     Q_PROPERTY(bool checkTime READ checkTime WRITE setCheckTime NOTIFY checkTimeChanged)
     Q_PROPERTY(int hoursBefore READ hoursBefore WRITE setHoursBefore NOTIFY hoursBeforeChanged)
     Q_PROPERTY(int hoursAfter READ hoursAfter WRITE setHoursAfter NOTIFY hoursAfterChanged)
@@ -25,8 +24,6 @@ public:
     Q_INVOKABLE bool setArchiveState(const QString &key, int state);
     int archiveAfterHours();
     void setArchiveAfterHours(int value);
-    int sortBy();
-    void setSortBy(int value);
     bool checkTime();
     void setCheckTime(bool value);
     int hoursBefore();
@@ -47,7 +44,6 @@ public:
 signals:
     void archiveStateChanged();
     void archiveAfterHoursChanged();
-    void sortByChanged();
     void checkTimeChanged();
     void hoursBeforeChanged();
     void hoursAfterChanged();

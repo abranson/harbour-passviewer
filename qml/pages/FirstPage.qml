@@ -74,6 +74,11 @@ Page {
             }
 
             menu: ContextMenu {
+                MenuItem {
+                    text: qsTr("Share")
+                    onClicked: appWindow.sharePass(path)
+                }
+
 
                 MenuItem {
                     text: qsTr("Show")
@@ -172,15 +177,15 @@ Page {
             PullDownMenu {
 
                 MenuItem {
+                    text: qsTr("Import")
+                    onClicked: pageStack.push(Qt.resolvedUrl("ScanCard.qml"))
+                }
+
+                MenuItem {
                     text: qsTr("Archive (%1)").arg(archivedPasses.count)
                     onClicked: pageStack.push(Qt.resolvedUrl("Archive.qml"), {
                         passModel: archivedPasses, itemDelegate: passDelegate
                     })
-                }
-
-                MenuItem {
-                    text: qsTr("Import")
-                    onClicked: pageStack.push(Qt.resolvedUrl("ScanCard.qml"))
                 }
 
                 MenuItem {
@@ -363,7 +368,6 @@ Page {
 
     Connections {
         target: settingsStore
-        onSortByChanged: checkPassList()
         onArchiveAfterHoursChanged: checkPassList()
         onArchiveStateChanged: checkPassList()
         onCheckTimeChanged: checkPassList()
@@ -516,26 +520,6 @@ Page {
                 notificator.removeNotification(newpasses[pass].path);
         }
         refreshVisiblePasses();
-        // Timeline order is independent of which pass is most relevant now.
-        var top = null;
-        for (var index = 0; index < passList.count; index++) {
-            var candidate = passList.get(index);
-            if (candidate.points !== -1 && (top === null || candidate.points < top.points))
-                top = candidate;
-        }
-        if (top !== null) {
-            var icon = "image://zipimage" + top.path + "/icon.png";
-            if (topIcon !== icon) {
-                topIcon = icon;
-                topPath = top.path;
-            }
-        }
-        else {
-            if (topIcon !== "") {
-                topIcon = "";
-                topPath = "";
-            }
-        }
     }
 
     function refreshVisiblePasses() {
@@ -670,7 +654,7 @@ Page {
     }
 
     function comparePasses(a, b) {
-        return Timeline.compare(a, b, settingsStore.sortBy);
+        return Timeline.compare(a, b);
     }
 
     function checkPassList() {

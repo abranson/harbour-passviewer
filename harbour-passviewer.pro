@@ -18,6 +18,7 @@ PKGCONFIG += sailfishapp zxing
 QMAKE_CXXFLAGS += -std=c++17
 
 SOURCES += src/harbour-passviewer.cpp \
+    src/passsharer.cpp \
     src/barcodescanner.cpp \
     src/barcodecodec.cpp \
     src/savedcards.cpp \
@@ -80,6 +81,7 @@ TRANSLATIONS += translations/harbour-passviewer-fr.ts
 TRANSLATIONS += translations/harbour-passviewer-es.ts
 
 HEADERS += \
+    src/passsharer.h \
     src/barcodescanner.h \
     src/barcodecodec.h \
     src/savedcards.h \

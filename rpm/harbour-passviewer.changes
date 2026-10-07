@@ -8,6 +8,21 @@
 # * date Author's Name <author's email> version-release
 # - Summary of changes
 
+* Wed Oct 7 2026 Andrew Branson <andrew.branson@jolla.com> 2.0-5
+- Frame cover barcodes in a square between app and pass icons
+- Retain the large app icon on the default cover
+
+* Wed Oct 7 2026 Andrew Branson <andrew.branson@jolla.com> 2.0-4
+- Show the open barcode on the cover, or the application title when none is open
+
+* Fri Sep 25 2026 Andrew Branson <andrew.branson@jolla.com> 2.0-3
+- Remove sort options and always use the timeline order
+- Order the main menu as Import, Archive, Settings
+
+* Fri Sep 25 2026 Andrew Branson <andrew.branson@jolla.com> 2.0-2
+- Share original passes and exported scanned cards through Sailfish sharing
+- Preserve exported card barcode images, icons and attribution
+
 * Fri Sep 25 2026 Andrew Branson <andrew.branson@jolla.com> 2.0-1
 - Save scanned cards from the camera or images, with custom icons
 - Import and preview pkpass files and pkpasses bundles in private storage

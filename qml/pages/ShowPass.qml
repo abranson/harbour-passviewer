@@ -10,17 +10,23 @@ Page {
     property string jsondata: ''
     property string path: ''
     property bool updateable: false
+    readonly property url coverIconSource: path.length ? "image://zipimage" + path + "/icon.png" : ""
+    readonly property url coverBarcodeSource: pass.item ? pass.item.barcodeSource : ""
 
     SilicaFlickable {
         anchors.fill: parent
         contentHeight: pass.y + pass.item.height + Theme.paddingLarge
 
         PullDownMenu {
+            MenuItem {
+                text: qsTr("Share")
+                onClicked: appWindow.sharePass(page.path)
+            }
 
             MenuItem {
                 text: qsTr("Fullscreen Barcode")
                 onClicked: {
-                    pageStack.push(Qt.resolvedUrl("ShowCodeFullscreen.qml"), { barcodeContent: pass.item.barcodeContent, barcodeEncoding: pass.item.barcodeEncoding, barcodeType: pass.item.barcodeType });
+                    pageStack.push(Qt.resolvedUrl("ShowCodeFullscreen.qml"), { coverIconSource: page.coverIconSource, barcodeImageSource: pass.item.barcodeImageSource, barcodeContent: pass.item.barcodeContent, barcodeEncoding: pass.item.barcodeEncoding, barcodeType: pass.item.barcodeType });
                 }
             }
 

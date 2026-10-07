@@ -133,3 +133,9 @@ function copyText(text, clipboard, notificator) {
     clipboard.text = text;
     notificator.bannerNotification(qsTr("copied to clipboard"), "");
 }
+
+function sharedBarcodeImage(pass, path) {
+    var info = pass.userInfo && pass.userInfo.passViewer;
+    return info && info.barcodeImageVersion === 1
+            ? "image://zipimage" + path + "/barcode.png" : "";
+}

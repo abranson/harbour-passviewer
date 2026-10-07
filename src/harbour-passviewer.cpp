@@ -23,6 +23,7 @@
 #include "cardicons.h"
 #include "barcodecodec.h"
 #include "passimporter.h"
+#include "passsharer.h"
 
 
 int main(int argc, char *argv[])
@@ -46,6 +47,9 @@ int main(int argc, char *argv[])
     qmlRegisterType<BarcodeScanner>("PassViewer", 1, 0, "BarcodeScanner");
     SavedCards savedCards;
     view->rootContext()->setContextProperty("savedCards", &savedCards);
+
+    PassSharer passSharer(&savedCards);
+    view->rootContext()->setContextProperty("passSharer", &passSharer);
 
     BarcodeCodec barcodeCodec;
     view->rootContext()->setContextProperty("barcodeCodec", &barcodeCodec);

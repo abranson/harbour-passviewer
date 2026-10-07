@@ -10,6 +10,6 @@ X-Nemo-Single-Instance=no
 # Name[de]=Pass Viewer
 
 [X-Sailjail]
-Permissions=Camera;Internet;Location;MediaIndexing;RemovableMedia;UserDirs
+Permissions=Sharing;Camera;Internet;Location;MediaIndexing;RemovableMedia;UserDirs
 OrganizationName=ch.p2501
 ApplicationName=harbour-passviewer

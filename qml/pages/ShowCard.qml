@@ -7,6 +7,8 @@ Page {
     allowedOrientations: Orientation.All
     property string cardId
     property var card: savedCards.card(cardId)
+    readonly property url coverIconSource: card.iconImage || "image://theme/harbour-passviewer"
+    readonly property url coverBarcodeSource: card.image || ""
 
     Connections {
         target: savedCards
@@ -18,6 +20,11 @@ Page {
         contentHeight: body.y + body.height + Theme.paddingLarge
 
         PullDownMenu {
+            MenuItem {
+                text: qsTr("Share")
+                onClicked: appWindow.sharePass("card:" + page.cardId)
+            }
+
             MenuItem {
                 text: qsTr("Change icon")
                 onClicked: pageStack.push(Qt.resolvedUrl("CardIcon.qml"), { cardId: page.cardId })
@@ -80,6 +87,6 @@ Page {
     }
 
     function showFullscreen() {
-        pageStack.push(Qt.resolvedUrl("ShowCodeFullscreen.qml"), { barcodeImageSource: card.image })
+        pageStack.push(Qt.resolvedUrl("ShowCodeFullscreen.qml"), { coverIconSource: page.coverIconSource, barcodeImageSource: card.image })
     }
 }

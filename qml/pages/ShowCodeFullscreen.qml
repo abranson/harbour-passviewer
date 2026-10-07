@@ -6,7 +6,9 @@ Page {
 
     allowedOrientations: Orientation.All
 
+    property url coverIconSource
     property url barcodeImageSource
+    readonly property alias coverBarcodeSource: barcodeImage.source
     property string barcodeType: "qr"
     property string barcodeEncoding: "iso-8859-1"
     property string barcodeContent: ""
@@ -26,7 +28,7 @@ Page {
             anchors.margins: Theme.paddingLarge
             smooth: false
             fillMode: Image.PreserveAspectFit
-            source: page.barcodeImageSource.toString().length > 0 ? page.barcodeImageSource : "image://barcode/" + barcodeType + "/" + barcodeEncoding + "/" + barcodeContent;
+            source: page.barcodeImageSource.toString().length > 0 ? page.barcodeImageSource : barcodeContent.length ? "image://barcode/" + barcodeType + "/" + barcodeEncoding + "/" + barcodeContent : "";
         }
 
         Label {

@@ -30,26 +30,6 @@ Page {
 
             Label {
                 anchors.right: parent.right
-                text: qsTr("Sort")
-                font.family: Theme.fontFamilyHeading
-                color: Theme.highlightColor
-            }
-
-            ComboBox {
-                width: parent.width
-                label: qsTr("Sort by")
-                menu: ContextMenu {
-                    MenuItem { text: qsTr("Timeline (newest first)") }
-                    MenuItem { text: qsTr("Event Date") }
-                    MenuItem { text: qsTr("File Date") }
-                    MenuItem { text: qsTr("Event Name") }
-                }
-                currentIndex: settingsStore.sortBy
-                onCurrentIndexChanged: settingsStore.sortBy = currentIndex
-            }
-
-            Label {
-                anchors.right: parent.right
                 text: qsTr("Time")
                 font.family: Theme.fontFamilyHeading
                 color: Theme.highlightColor

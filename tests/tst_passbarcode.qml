@@ -15,6 +15,13 @@ TestCase {
         }
     }
 
+    function test_sharedBarcodeImage() {
+        compare(Utils.sharedBarcodeImage({}, "/pass.pkpass"), "")
+        compare(Utils.sharedBarcodeImage({ userInfo: { passViewer: { barcodeImageVersion: 2 } } }, "/pass.pkpass"), "")
+        compare(Utils.sharedBarcodeImage({ userInfo: { passViewer: { barcodeImageVersion: 1 } } }, "/pass.pkpass"),
+                "image://zipimage/pass.pkpass/barcode.png")
+    }
+
     function test_noBarcode() {
         compare(Utils.selectBarcode({}, codec).content, "")
         compare(Utils.selectBarcode({ barcodes: [] }, codec).content, "")

@@ -36,18 +36,14 @@ function classify(data, now, hoursBefore, hoursAfter, archiveAfterHours, archive
     };
 }
 
-function compare(a, b, sortBy) {
+function compare(a, b) {
     if (a.archived !== b.archived)
         return a.archived ? 1 : -1;
     // Undated passes form their own section; archived items share one timeline.
     if (!a.archived && a.timelineSection !== b.timelineSection)
         return a.timelineSection === "undated" ? -1 : 1;
     var difference = 0;
-    if (sortBy === 3) {
-        difference = a.name.localeCompare(b.name);
-    } else if (sortBy === 2) {
-        difference = timestamp(b.mtime) - timestamp(a.mtime);
-    } else if (a.archived) {
+    if (a.archived) {
         difference = (b.eventTime || b.expiryTime || timestamp(b.mtime))
                    - (a.eventTime || a.expiryTime || timestamp(a.mtime));
     } else if (a.eventTime && b.eventTime) {

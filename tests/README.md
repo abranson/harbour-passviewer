@@ -104,3 +104,17 @@ does not navigate unexpectedly. Camera gestures must still work after cancel.
 Import confirmation should render each complete pass, including images, fields
 and barcode, before accepting. Cancelling a preview must not clear saved-pass
 update markers. Check a multi-pass bundle scrolls cleanly to Import/Cancel.
+
+Sharing export tests (same ZXing setup as codec tests):
+
+    qmake /path/to/harbour-passviewer/tests/share.pro
+    make && ./tst_passsharer
+
+These use isolated temporary storage and verify binary payloads, standard
+barcode fields, GS1/ECI and EAN image preservation, custom icon and attribution,
+manifest hashes, private cache files, import round trips, unchanged original
+packages, source removal, invalid input and write failures.
+On device, open Share from main/Archive context menus and pass/card/simple-view
+pulley menus. Check the Sailfish chooser opens; cancel without selecting a
+recipient. Re-import an exported synthetic card and check its barcode also
+opens fullscreen. Actual sending requires a user-selected destination.
