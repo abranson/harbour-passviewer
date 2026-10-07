@@ -94,7 +94,7 @@ void CardIcons::selectCatalog(const QString &id)
 void CardIcons::request(const QUrl &url, const QVariantMap &credit)
 {
     QNetworkRequest request(url);
-    request.setRawHeader("User-Agent", "PassViewer/2.0 (Sailfish OS)");
+    request.setRawHeader("User-Agent", "PassViewer/2.1 (Sailfish OS)");
     QNetworkReply *reply = m_network.get(request);
     m_reply = reply;
     emit busyChanged();

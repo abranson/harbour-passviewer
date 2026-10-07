@@ -8,6 +8,9 @@
 # * date Author's Name <author's email> version-release
 # - Summary of changes
 
+* Wed Oct 7 2026 Andrew Branson <andrew.branson@jolla.com> 2.1-1
+- Release pass sharing, fixed timeline ordering and the updated barcode cover
+
 * Wed Oct 7 2026 Andrew Branson <andrew.branson@jolla.com> 2.0-5
 - Frame cover barcodes in a square between app and pass icons
 - Retain the large app icon on the default cover

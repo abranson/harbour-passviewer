@@ -13,8 +13,8 @@ Name:       harbour-passviewer
 %{!?qtc_make:%define qtc_make make}
 %{?qtc_builddir:%define _builddir %qtc_builddir}
 Summary:    Pass Viewer
-Version:    2.0
-Release:    5
+Version:    2.1
+Release:    1
 Group:      Applications/Productivity
 License:    MIT/BSD
 URL:        https://github.com/abranson/harbour-passviewer
